@@ -1,21 +1,19 @@
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 public class MenuPrincipalSIGU extends JFrame {
 
-    private JPanel contentCards; // Para cambiar entre pantallas si fuera necesario
+    private JPanel centerCardPanel;
     private CardLayout cardLayout;
+    private JButton[] sidebarButtons;
+    private String[] opcionesSidebar = {"Agregar nuevo bien", "Editar", "Consultar inventario", "Eliminar registro"};
 
     public MenuPrincipalSIGU() {
         setTitle("SIGU - Sistema de Inventario Global Universitario");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setExtendedState(JFrame.MAXIMIZED_BOTH); // Pantalla completa
-        setMinimumSize(new Dimension(1000, 700));
-        
-        // --- LAYOUT PRINCIPAL ---
+        setExtendedState(JFrame.MAXIMIZED_BOTH); // Pantalla completa automática
+        setMinimumSize(new Dimension(1100, 750));
         setLayout(new BorderLayout());
 
         // 1. HEADER (NORTE)
@@ -24,62 +22,50 @@ public class MenuPrincipalSIGU extends JFrame {
         // 2. SIDEBAR (OESTE)
         add(crearSidebar(), BorderLayout.WEST);
 
-        // 3. CONTENIDO PRINCIPAL (CENTRO) CON SCROLL
-        JPanel mainContent = new JPanel(new BorderLayout());
-        mainContent.setBackground(Color.WHITE);
-        mainContent.setBorder(new EmptyBorder(20, 40, 20, 40));
+        // 3. CONTENEDOR DINÁMICO (CENTRO)
+        cardLayout = new CardLayout();
+        centerCardPanel = new JPanel(cardLayout);
+        centerCardPanel.setBackground(Color.WHITE);
 
-        JLabel lblTituloForm = new JLabel("Agregar nuevo Bien");
-        lblTituloForm.setFont(new Font("Arial", Font.BOLD, 28));
-        lblTituloForm.setBorder(new EmptyBorder(0, 0, 20, 0));
-        mainContent.add(lblTituloForm, BorderLayout.NORTH);
+        // INSTANCIAMOS E INYECTAMOS LAS NUEVAS CLASES (JPanels)
+        centerCardPanel.add(new PanelAgregarBien(), "Agregar nuevo bien");
+        centerCardPanel.add(new PanelEditarBien(), "Editar");
+        centerCardPanel.add(new PanelConsultarInventario(), "Consultar inventario");
+        centerCardPanel.add(new PanelEliminarRegistro(), "Eliminar registro");
 
-        // Formulario dentro de un ScrollPane
-        JPanel formPanel = crearFormulario();
-        JScrollPane scrollPane = new JScrollPane(formPanel);
-        scrollPane.setBorder(null); // Quitar borde feo del scroll
-        scrollPane.getVerticalScrollBar().setUnitIncrement(16); // Scroll suave
-        mainContent.add(scrollPane, BorderLayout.CENTER);
-
-        // Botones de acción inferiores
-        mainContent.add(crearPanelBotones(), BorderLayout.SOUTH);
-
-        add(mainContent, BorderLayout.CENTER);
+        add(centerCardPanel, BorderLayout.CENTER);
     }
 
     private JPanel crearHeader() {
         JPanel header = new JPanel(new BorderLayout());
         header.setBackground(Color.WHITE);
-        header.setPreferredSize(new Dimension(getWidth(), 80));
+        header.setPreferredSize(new Dimension(getWidth(), 70));
         header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.LIGHT_GRAY));
 
-        // Logo
         JLabel lblLogo = new JLabel("  SIGU");
-        lblLogo.setFont(new Font("Arial", Font.BOLD, 24));
-        lblLogo.setForeground(Color.BLACK);
+        lblLogo.setFont(new Font("Arial", Font.BOLD, 22));
         header.add(lblLogo, BorderLayout.WEST);
 
-        // Usuario / Perfil
-        JPanel profilePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 20));
+        JPanel profilePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 15));
         profilePanel.setBackground(Color.WHITE);
         
-        // Avatar (Círculo pequeño)
         JPanel avatar = new JPanel() {
+            @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2d.setColor(new Color(230, 230, 230));
-                g2d.fillOval(0, 0, 40, 40);
+                g2d.fillOval(0, 0, 35, 35);
                 g2d.setColor(Color.GRAY);
-                g2d.fillOval(14, 10, 12, 12);
-                g2d.fillArc(10, 22, 20, 20, 0, 180);
+                g2d.fillOval(12, 8, 11, 11);
+                g2d.fillArc(8, 20, 19, 19, 0, 180);
             }
         };
-        avatar.setPreferredSize(new Dimension(40, 40));
+        avatar.setPreferredSize(new Dimension(35, 35));
         avatar.setBackground(Color.WHITE);
 
         JComboBox<String> userCombo = new JComboBox<>(new String[]{"Administrador/ Usuario"});
-        userCombo.setPreferredSize(new Dimension(200, 30));
+        userCombo.setPreferredSize(new Dimension(180, 28));
 
         profilePanel.add(avatar);
         profilePanel.add(userCombo);
@@ -91,101 +77,54 @@ public class MenuPrincipalSIGU extends JFrame {
     private JPanel crearSidebar() {
         JPanel sidebar = new JPanel();
         sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
-        sidebar.setBackground(new Color(250, 250, 250));
-        sidebar.setPreferredSize(new Dimension(250, getHeight()));
+        sidebar.setBackground(new Color(252, 252, 252));
+        sidebar.setPreferredSize(new Dimension(240, getHeight()));
         sidebar.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, Color.LIGHT_GRAY));
 
-        String[] opciones = {"Agregar nuevo bien", "Editar", "Consultar inventario", "Eliminar registro"};
-        
-        sidebar.add(Box.createRigidArea(new Dimension(0, 30)));
+        sidebar.add(Box.createRigidArea(new Dimension(0, 20)));
+        sidebarButtons = new JButton[opcionesSidebar.length];
 
-        for (String opcion : opciones) {
+        for (int i = 0; i < opcionesSidebar.length; i++) {
+            String opcion = opcionesSidebar[i];
             JButton btn = new JButton(opcion);
-            btn.setMaximumSize(new Dimension(250, 50));
+            btn.setMaximumSize(new Dimension(240, 45));
             btn.setAlignmentX(Component.LEFT_ALIGNMENT);
             btn.setFocusPainted(false);
             btn.setContentAreaFilled(false);
-            btn.setBorder(new EmptyBorder(10, 30, 10, 10));
+            btn.setBorder(new EmptyBorder(10, 25, 10, 10));
             btn.setHorizontalAlignment(SwingConstants.LEFT);
-            btn.setFont(new Font("Arial", Font.PLAIN, 16));
+            btn.setFont(new Font("Arial", Font.PLAIN, 15));
             
-            // Estilo para la opción seleccionada
-            if (opcion.equals("Agregar nuevo bien")) {
+            if (i == 0) {
                 btn.setForeground(new Color(41, 92, 180));
-                btn.setFont(new Font("Arial", Font.BOLD, 16));
+                btn.setFont(new Font("Arial", Font.BOLD, 15));
             } else {
                 btn.setForeground(Color.GRAY);
             }
 
+            btn.addActionListener(e -> {
+                cardLayout.show(centerCardPanel, opcion);
+                actualizarEstiloSidebar(opcion);
+            });
+
+            sidebarButtons[i] = btn;
             sidebar.add(btn);
-            sidebar.add(Box.createRigidArea(new Dimension(0, 10)));
+            sidebar.add(Box.createRigidArea(new Dimension(0, 5)));
         }
 
         return sidebar;
     }
 
-    private JPanel crearFormulario() {
-        JPanel form = new JPanel(new GridBagLayout());
-        form.setBackground(Color.WHITE);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        String[] etiquetas = {
-            "N° de serie:", "N° de inventario:", "N° de dependencia:", "Subunidad responsable:",
-            "Descripción del bien:", "Marca:", "Color:", "Material:", "Serie:", "Estado físico:",
-            "N° de talón:", "N° de cheque:", "Folio de operación:", "N° de factura o título:",
-            "Fecha de factura o título:", "Nombre. Proveedor:", "Costo de adquisición:",
-            "Clasificador del objeto del gasto (partida genérica):",
-            "Clasificador del objeto por costo (partida específica):",
-            "Observaciones:", "Nombre:", "Expediente:"
-        };
-
-        for (int i = 0; i < etiquetas.length; i++) {
-            gbc.gridx = 0;
-            gbc.gridy = i;
-            gbc.weightx = 0.3;
-            JLabel label = new JLabel(etiquetas[i]);
-            label.setFont(new Font("Arial", Font.PLAIN, 16));
-            form.add(label, gbc);
-
-            gbc.gridx = 1;
-            gbc.weightx = 0.7;
-            if (etiquetas[i].equals("Estado físico:")) {
-                JComboBox<String> combo = new JComboBox<>(new String[]{"Bueno", "Regular", "Malo"});
-                form.add(combo, gbc);
+    private void actualizarEstiloSidebar(String opcionSeleccionada) {
+        for (JButton btn : sidebarButtons) {
+            if (btn.getText().equals(opcionSeleccionada)) {
+                btn.setForeground(new Color(41, 92, 180));
+                btn.setFont(new Font("Arial", Font.BOLD, 15));
             } else {
-                JTextField field = new JTextField();
-                field.setPreferredSize(new Dimension(400, 30));
-                form.add(field, gbc);
+                btn.setForeground(Color.GRAY);
+                btn.setFont(new Font("Arial", Font.PLAIN, 15));
             }
         }
-
-        return form;
-    }
-
-    private JPanel crearPanelBotones() {
-        JPanel pnlBotones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 20));
-        pnlBotones.setBackground(Color.WHITE);
-
-        JButton btnCarga = new JButton("Carga masiva");
-        estiloBoton(btnCarga, new Color(41, 92, 180));
-
-        JButton btnGuardar = new JButton("Guardar registro");
-        estiloBoton(btnGuardar, new Color(41, 92, 180));
-
-        pnlBotones.add(btnCarga);
-        pnlBotones.add(btnGuardar);
-
-        return pnlBotones;
-    }
-
-    private void estiloBoton(JButton btn, Color color) {
-        btn.setBackground(color);
-        btn.setForeground(Color.WHITE);
-        btn.setFocusPainted(false);
-        btn.setFont(new Font("Arial", Font.BOLD, 14));
-        btn.setPreferredSize(new Dimension(180, 45));
     }
 
     public static void main(String[] args) {
