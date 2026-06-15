@@ -4,8 +4,16 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Path2D;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class LoginSIGU extends JFrame {
+
+    // Cambiamos las variables a nivel de clase para poder leerlas en el evento del botón
+    private JTextFieldHint txtUsuario;
+    private JPasswordFieldHint txtPassword;
 
     public LoginSIGU() {
         // Configuración básica de la ventana (JFrame)
@@ -60,7 +68,7 @@ public class LoginSIGU extends JFrame {
         cardGbc.fill = GridBagConstraints.HORIZONTAL;
         cardGbc.insets = new Insets(8, 30, 8, 30); 
 
-        // Avatar dibujado por código para evitar el cuadro vacío
+        // Avatar dibujado por código
         JPanel avatarPanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -68,14 +76,12 @@ public class LoginSIGU extends JFrame {
                 Graphics2D g2d = (Graphics2D) g;
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 
-                // Círculo gris de fondo
                 g2d.setColor(new Color(230, 230, 230));
                 g2d.fillOval(5, 5, 80, 80);
                 
-                // Silueta del avatar (Cabeza y hombros)
                 g2d.setColor(Color.GRAY);
-                g2d.fillOval(34, 18, 22, 22); // Cabeza
-                g2d.fillArc(20, 48, 50, 50, 0, 180); // Hombros
+                g2d.fillOval(34, 18, 22, 22); 
+                g2d.fillArc(20, 48, 50, 50, 0, 180); 
             }
         };
         avatarPanel.setPreferredSize(new Dimension(90, 90));
@@ -83,7 +89,6 @@ public class LoginSIGU extends JFrame {
         
         cardGbc.gridy = 0;
         cardGbc.insets = new Insets(20, 30, 15, 30);
-        // Usamos un panel intermedio para centrar el avatar bien
         JPanel centerAvatar = new JPanel(new FlowLayout(FlowLayout.CENTER));
         centerAvatar.setBackground(Color.WHITE);
         centerAvatar.add(avatarPanel);
@@ -97,7 +102,7 @@ public class LoginSIGU extends JFrame {
         loginCard.add(lblUsuario, cardGbc);
 
         // Campo de Texto Usuario
-        JTextFieldHint txtUsuario = new JTextFieldHint("nombre de usuario");
+        txtUsuario = new JTextFieldHint("nombre de usuario");
         txtUsuario.setFont(new Font("Arial", Font.PLAIN, 14));
         txtUsuario.setPreferredSize(new Dimension(200, 35));
         txtUsuario.setBorder(BorderFactory.createLineBorder(Color.BLACK, 1));
@@ -110,17 +115,16 @@ public class LoginSIGU extends JFrame {
         cardGbc.gridy = 3;
         loginCard.add(lblPassword, cardGbc);
 
-        // --- CONTENEDOR PARA CONTRASEÑA + BOTÓN OJO DIBUJADO ---
+        // --- CONTENEDOR PARA CONTRASEÑA ---
         JPanel passwordContainer = new JPanel(new BorderLayout());
         passwordContainer.setBackground(Color.WHITE);
         passwordContainer.setBorder(BorderFactory.createLineBorder(Color.BLACK, 1));
         passwordContainer.setPreferredSize(new Dimension(200, 35));
 
-        JPasswordFieldHint txtPassword = new JPasswordFieldHint("escribe tu contraseña");
+        txtPassword = new JPasswordFieldHint("escribe tu contraseña");
         txtPassword.setFont(new Font("Arial", Font.PLAIN, 14));
         txtPassword.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
         
-        // El botón ahora dibuja los ojos con vectores gráficos matemáticos
         EyeButton btnTogglePassword = new EyeButton();
         btnTogglePassword.setPreferredSize(new Dimension(40, 35));
         btnTogglePassword.setBorder(BorderFactory.createEmptyBorder());
@@ -149,7 +153,6 @@ public class LoginSIGU extends JFrame {
         // Enlace de Olvidaste tu contraseña
         JLabel lblForgot = new JLabel("<html><u>¿Olvidaste tu contraseña? Haz clic aquí</u></html>", SwingConstants.CENTER);
         lblForgot.setFont(new Font("Arial", Font.PLAIN, 12));
-        lblForgot.setForeground(new Color(41, 92, 180));
         lblForgot.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         cardGbc.gridy = 6;
         cardGbc.insets = new Insets(0, 20, 20, 20);
@@ -158,7 +161,7 @@ public class LoginSIGU extends JFrame {
         gbc.gridy = 1;
         add(loginCard, gbc);
 
-        // --- LÓGICA DEL INTERRUPTOR ---
+        // --- MANEJO DE EVENTO PARA OCULTAR/MOSTRAR CONTRASEÑA ---
         btnTogglePassword.addActionListener(new ActionListener() {
             private boolean isPasswordVisible = false;
 
@@ -176,22 +179,72 @@ public class LoginSIGU extends JFrame {
             }
         });
 
+        // --- ACCIÓN CONECTADA A LA BASE DE DATOS REAL DE PHP_MY_ADMIN ---
         btnLogin.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String usuario = txtUsuario.getText();
-                JOptionPane.showMessageDialog(null, "Intentando conectar con el usuario: " + usuario);
+                String usuario = txtUsuario.getText().trim();
+                String contrasena = new String(txtPassword.getPassword()).trim();
+
+                // Validamos campos vacíos preliminares
+                if (usuario.isEmpty() || contrasena.isEmpty()) {
+                    JOptionPane.showMessageDialog(LoginSIGU.this, 
+                        "Por favor introduzca el usuario y la contraseña.", 
+                        "Campos incompletos", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                // Ejecutamos validación en la base de datos
+                if (validarAcceso(usuario, contrasena)) {
+                    JOptionPane.showMessageDialog(LoginSIGU.this, "¡Conexión Exitosa! Bienvenido a SIGU.");
+                    
+                    // Abrimos el menú modular por clases que creamos antes
+                    MenuPrincipalSIGU menu = new MenuPrincipalSIGU();
+                    menu.setVisible(true);
+                    
+                    // Cerramos la ventana actual del Login
+                    dispose();
+                } else {
+                    JOptionPane.showMessageDialog(LoginSIGU.this, 
+                        "Usuario o contraseña incorrectos. Verifique sus credenciales.", 
+                        "Acceso Denegado", JOptionPane.ERROR_MESSAGE);
+                }
             }
         });
     }
 
-    // --- CLASE PARA DIBUJAR EL OJO CLÁSICO SIN DEPENDER DE FUENTES ---
+    // --- MÉTODO CONECTOR DE BASE DE DATOS (MySQL) ---
+    private boolean validarAcceso(String user, String pass) {
+        boolean esValido = false;
+        
+        // Sentencia SQL apuntando a las columnas de tu tabla 'usuarios'
+        String sql = "SELECT * FROM usuarios WHERE username = ? AND contrasena = ?";
+        
+        // Llamamos directamente a la clase Conectar que creamos en el paso anterior
+        try (Connection con = Conectar.getConexion();
+             PreparedStatement pst = con.prepareStatement(sql)) {
+            
+            pst.setString(1, user);
+            pst.setString(2, pass);
+            
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    esValido = true; // Se encontró coincidencia exacta en phpMyAdmin
+                }
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Error crítico de base de datos: " + ex.getMessage());
+        }
+        return esValido;
+    }
+
+    // --- CLASE PARA DIBUJAR EL OJO ---
     class EyeButton extends JButton {
         private boolean isPasswordVisible = false;
 
         public void setPasswordVisible(boolean visible) {
             this.isPasswordVisible = visible;
-            repaint(); // Redibuja el botón con el estado correcto
+            repaint(); 
         }
 
         @Override
@@ -206,7 +259,6 @@ public class LoginSIGU extends JFrame {
             g2d.setColor(Color.BLACK);
             g2d.setStroke(new BasicStroke(1.5f));
 
-            // Coordenadas para la forma curva del ojo (Arriba y abajo)
             Path2D eyePath = new Path2D.Double();
             eyePath.moveTo(w * 0.25, h * 0.5);
             eyePath.quadTo(w * 0.5, h * 0.25, w * 0.75, h * 0.5);
@@ -214,10 +266,8 @@ public class LoginSIGU extends JFrame {
             eyePath.closePath();
             g2d.draw(eyePath);
 
-            // El iris (Círculo del centro)
             g2d.fill(new Ellipse2D.Double(w * 0.42, h * 0.38, w * 0.16, w * 0.16));
 
-            // Si la contraseña está oculta, le cruza una línea diagonal (Ojo tachado)
             if (!isPasswordVisible) {
                 g2d.drawLine((int)(w * 0.28), (int)(h * 0.32), (int)(w * 0.72), (int)(h * 0.68));
             }

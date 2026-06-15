@@ -64,7 +64,7 @@ public class MenuPrincipalSIGU extends JFrame {
         avatar.setPreferredSize(new Dimension(35, 35));
         avatar.setBackground(Color.WHITE);
 
-        JComboBox<String> userCombo = new JComboBox<>(new String[]{"Administrador/ Usuario"});
+        JComboBox<String> userCombo = new JComboBox<>(new String[]{"Administrador", "Usuario"});
         userCombo.setPreferredSize(new Dimension(180, 28));
 
         profilePanel.add(avatar);
