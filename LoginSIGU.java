@@ -11,12 +11,10 @@ import java.sql.SQLException;
 
 public class LoginSIGU extends JFrame {
 
-    // Cambiamos las variables a nivel de clase para poder leerlas en el evento del botón
     private JTextFieldHint txtUsuario;
     private JPasswordFieldHint txtPassword;
 
     public LoginSIGU() {
-        // Configuración básica de la ventana (JFrame)
         setTitle("SIGU - Iniciar Sesión");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(900, 600);
@@ -55,7 +53,6 @@ public class LoginSIGU extends JFrame {
         gbc.gridy = 0;
         add(headerPanel, gbc);
 
-
         // --- 2. SECCIÓN DEL CONTENEDOR AZUL (LOGIN CARD) ---
         JPanel loginCard = new JPanel();
         loginCard.setBackground(Color.WHITE);
@@ -68,7 +65,6 @@ public class LoginSIGU extends JFrame {
         cardGbc.fill = GridBagConstraints.HORIZONTAL;
         cardGbc.insets = new Insets(8, 30, 8, 30); 
 
-        // Avatar dibujado por código
         JPanel avatarPanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -95,13 +91,11 @@ public class LoginSIGU extends JFrame {
         loginCard.add(centerAvatar, cardGbc);
         cardGbc.insets = new Insets(8, 30, 8, 30); 
 
-        // Etiqueta Usuario
         JLabel lblUsuario = new JLabel("Usuario");
         lblUsuario.setFont(new Font("Arial", Font.BOLD, 14));
         cardGbc.gridy = 1;
         loginCard.add(lblUsuario, cardGbc);
 
-        // Campo de Texto Usuario
         txtUsuario = new JTextFieldHint("nombre de usuario");
         txtUsuario.setFont(new Font("Arial", Font.PLAIN, 14));
         txtUsuario.setPreferredSize(new Dimension(200, 35));
@@ -109,13 +103,11 @@ public class LoginSIGU extends JFrame {
         cardGbc.gridy = 2;
         loginCard.add(txtUsuario, cardGbc);
 
-        // Etiqueta Contraseña
         JLabel lblPassword = new JLabel("Contraseña");
         lblPassword.setFont(new Font("Arial", Font.BOLD, 14));
         cardGbc.gridy = 3;
         loginCard.add(lblPassword, cardGbc);
 
-        // --- CONTENEDOR PARA CONTRASEÑA ---
         JPanel passwordContainer = new JPanel(new BorderLayout());
         passwordContainer.setBackground(Color.WHITE);
         passwordContainer.setBorder(BorderFactory.createLineBorder(Color.BLACK, 1));
@@ -138,7 +130,6 @@ public class LoginSIGU extends JFrame {
         cardGbc.gridy = 4;
         loginCard.add(passwordContainer, cardGbc);
 
-        // Botón Iniciar Sesión
         JButton btnLogin = new JButton("iniciar sesión");
         btnLogin.setFont(new Font("Arial", Font.PLAIN, 14));
         btnLogin.setBackground(new Color(41, 92, 180)); 
@@ -150,7 +141,6 @@ public class LoginSIGU extends JFrame {
         loginCard.add(btnLogin, cardGbc);
         cardGbc.insets = new Insets(8, 30, 8, 30); 
 
-        // Enlace de Olvidaste tu contraseña
         JLabel lblForgot = new JLabel("<html><u>¿Olvidaste tu contraseña? Haz clic aquí</u></html>", SwingConstants.CENTER);
         lblForgot.setFont(new Font("Arial", Font.PLAIN, 12));
         lblForgot.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -161,7 +151,6 @@ public class LoginSIGU extends JFrame {
         gbc.gridy = 1;
         add(loginCard, gbc);
 
-        // --- MANEJO DE EVENTO PARA OCULTAR/MOSTRAR CONTRASEÑA ---
         btnTogglePassword.addActionListener(new ActionListener() {
             private boolean isPasswordVisible = false;
 
@@ -179,14 +168,12 @@ public class LoginSIGU extends JFrame {
             }
         });
 
-        // --- ACCIÓN CONECTADA A LA BASE DE DATOS REAL DE PHP_MY_ADMIN ---
         btnLogin.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 String usuario = txtUsuario.getText().trim();
                 String contrasena = new String(txtPassword.getPassword()).trim();
 
-                // Validamos campos vacíos preliminares
                 if (usuario.isEmpty() || contrasena.isEmpty()) {
                     JOptionPane.showMessageDialog(LoginSIGU.this, 
                         "Por favor introduzca el usuario y la contraseña.", 
@@ -194,16 +181,11 @@ public class LoginSIGU extends JFrame {
                     return;
                 }
 
-                // Ejecutamos validación en la base de datos
                 if (validarAcceso(usuario, contrasena)) {
                     JOptionPane.showMessageDialog(LoginSIGU.this, "¡Conexión Exitosa! Bienvenido a SIGU.");
-                    
-                    // Abrimos el menú modular por clases que creamos antes
-                    MenuPrincipalSIGU menu = new MenuPrincipalSIGU();
+                    MenuPrincipalSIGU menu = new MenuPrincipalSIGU(usuario);
                     menu.setVisible(true);
-                    
-                    // Cerramos la ventana actual del Login
-                    dispose();
+                    dispose(); 
                 } else {
                     JOptionPane.showMessageDialog(LoginSIGU.this, 
                         "Usuario o contraseña incorrectos. Verifique sus credenciales.", 
@@ -213,32 +195,55 @@ public class LoginSIGU extends JFrame {
         });
     }
 
-    // --- MÉTODO CONECTOR DE BASE DE DATOS (MySQL) ---
+    // --- NUEVO MÉTODO DE DIAGNÓSTICO CON SALIDAS A CONSOLA ---
     private boolean validarAcceso(String user, String pass) {
         boolean esValido = false;
+        String sql = "SELECT * FROM usuarios WHERE usuario = ? AND contraseña = ?";
         
-        // Sentencia SQL apuntando a las columnas de tu tabla 'usuarios'
-        String sql = "SELECT * FROM usuarios WHERE username = ? AND contrasena = ?";
+        System.out.println("[SIGU] Iniciando validación para el usuario: " + user);
         
-        // Llamamos directamente a la clase Conectar que creamos en el paso anterior
-        try (Connection con = Conectar.getConexion();
-             PreparedStatement pst = con.prepareStatement(sql)) {
+        try {
+            System.out.println("[SIGU] Intentando obtener conexión con MySQL...");
+            Connection con = Conectar.getConexion();
             
-            pst.setString(1, user);
-            pst.setString(2, pass);
+            if (con == null) {
+                System.out.println("[SIGU] ¡ALERTA! La conexión devuelta es NULL.");
+                JOptionPane.showMessageDialog(this, "La base de datos devolvió una conexión vacía (null).", "Error de Conexión", JOptionPane.ERROR_MESSAGE);
+                return false;
+            }
             
-            try (ResultSet rs = pst.executeQuery()) {
-                if (rs.next()) {
-                    esValido = true; // Se encontró coincidencia exacta en phpMyAdmin
+            System.out.println("[SIGU] Conexión establecida con éxito. Preparando sentencia SQL...");
+            try (PreparedStatement pst = con.prepareStatement(sql)) {
+                pst.setString(1, user);
+                pst.setString(2, pass);
+                
+                System.out.println("[SIGU] Ejecutando Query en phpMyAdmin...");
+                try (ResultSet rs = pst.executeQuery()) {
+                    System.out.println("[SIGU] Query ejecutado. Leyendo resultados...");
+                    if (rs.next()) {
+                        System.out.println("[SIGU] ¡Usuario encontrado en la base de datos!");
+                        esValido = true;
+                    } else {
+                        System.out.println("[SIGU] Query ejecutado, pero no se encontró coincidencia.");
+                    }
                 }
             }
+            con.close();
+            
         } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(this, "Error crítico de base de datos: " + ex.getMessage());
+            System.out.println("[SIGU] Error de SQL detectado:");
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error de MySQL: " + ex.getMessage(), "Error SQL", JOptionPane.ERROR_MESSAGE);
+        } catch (Exception ex) {
+            System.out.println("[SIGU] Error general inesperado del sistema:");
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error general: " + ex.getMessage(), "Error General", JOptionPane.ERROR_MESSAGE);
         }
+        
+        System.out.println("[SIGU] Fin del método validarAcceso. Resultado: " + esValido);
         return esValido;
     }
 
-    // --- CLASE PARA DIBUJAR EL OJO ---
     class EyeButton extends JButton {
         private boolean isPasswordVisible = false;
 
@@ -274,7 +279,6 @@ public class LoginSIGU extends JFrame {
         }
     }
 
-    // --- CLASES PERSONALIZADAS PARA LOS PLACEHOLDERS ---
     class JTextFieldHint extends JTextField {
         private String hint;
         public JTextFieldHint(String hint) { this.hint = hint; }

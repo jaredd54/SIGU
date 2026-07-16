@@ -41,9 +41,9 @@ public class PanelEditarBien extends JPanel {
     private JTable crearTablaModelo() {
         String[] columnas = {"Columna 1", "Columna 2", "Columna 3", "Columna 4", "Columna 5", "Columna 6"};
         Object[][] datos = {
-            {"dfghj", "dfghj", "dfghj", "dfghj", "dfghj", "dfghj"},
-            {"dfghj", "dfghj", "dfghj", "dfghj", "dfghj", "dfghj"},
-            {"dfghj", "dfghj", "dfghj", "dfghj", "dfghj", "dfghj"}
+            {"", "", "", "", "", ""},
+            {"", "", "", "", "", ""},
+            {"", "", "", "", "", ""}
         };
         DefaultTableModel model = new DefaultTableModel(datos, columnas);
         JTable table = new JTable(model);

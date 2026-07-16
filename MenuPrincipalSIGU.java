@@ -8,8 +8,17 @@ public class MenuPrincipalSIGU extends JFrame {
     private CardLayout cardLayout;
     private JButton[] sidebarButtons;
     private String[] opcionesSidebar = {"Agregar nuevo bien", "Editar", "Consultar inventario", "Eliminar registro"};
+    private String usuarioLogueado; // Guardará el usuario que inició sesión
 
+    // Constructor por defecto (por si se ejecuta de forma aislada)
     public MenuPrincipalSIGU() {
+        this("Usuario SIGU");
+    }
+
+    // Constructor principal que recibe el usuario desde el Login
+    public MenuPrincipalSIGU(String usuario) {
+        this.usuarioLogueado = usuario;
+
         setTitle("SIGU - Sistema de Inventario Global Universitario");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setExtendedState(JFrame.MAXIMIZED_BOTH); // Pantalla completa automática
@@ -27,7 +36,7 @@ public class MenuPrincipalSIGU extends JFrame {
         centerCardPanel = new JPanel(cardLayout);
         centerCardPanel.setBackground(Color.WHITE);
 
-        // INSTANCIAMOS E INYECTAMOS LAS NUEVAS CLASES (JPanels)
+        // INSTANCIAMOS E INYECTAMOS LAS CLASES (JPanels)
         centerCardPanel.add(new PanelAgregarBien(), "Agregar nuevo bien");
         centerCardPanel.add(new PanelEditarBien(), "Editar");
         centerCardPanel.add(new PanelConsultarInventario(), "Consultar inventario");
@@ -64,8 +73,24 @@ public class MenuPrincipalSIGU extends JFrame {
         avatar.setPreferredSize(new Dimension(35, 35));
         avatar.setBackground(Color.WHITE);
 
-        JComboBox<String> userCombo = new JComboBox<>(new String[]{"Administrador", "Usuario"});
+        // Mostramos el usuario real que inició sesión en el JComboBox o una etiqueta
+        JComboBox<String> userCombo = new JComboBox<>(new String[]{usuarioLogueado, "Cerrar Sesión"});
         userCombo.setPreferredSize(new Dimension(180, 28));
+        
+        // Acción para cuando seleccionen "Cerrar Sesión"
+        userCombo.addActionListener(e -> {
+            if (userCombo.getSelectedItem().equals("Cerrar Sesión")) {
+                int registrarSalida = JOptionPane.showConfirmDialog(this, 
+                    "¿Seguro que desea salir del sistema?", "Cerrar Sesión", 
+                    JOptionPane.YES_NO_OPTION);
+                if (registrarSalida == JOptionPane.YES_OPTION) {
+                    new LoginSIGU().setVisible(true);
+                    dispose(); // Destruye el menú y regresa al Login
+                } else {
+                    userCombo.setSelectedIndex(0); // Revierte la selección
+                }
+            }
+        });
 
         profilePanel.add(avatar);
         profilePanel.add(userCombo);

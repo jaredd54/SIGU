@@ -66,7 +66,7 @@ public class PanelConsultarInventario extends JPanel {
 
     private JTable crearTablaModelo() {
         String[] columnas = {"Columna 1", "Columna 2", "Columna 3"};
-        Object[][] datos = {{"dfghj", "dfghj", "dfghj"}, {"dfghj", "dfghj", "dfghj"}};
+        Object[][] datos = {{"", "", ""}, {"", "", ""}};
         DefaultTableModel model = new DefaultTableModel(datos, columnas);
         JTable table = new JTable(model);
         table.setRowHeight(30);
