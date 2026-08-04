@@ -4,6 +4,9 @@ import java.awt.*;
 
 public class MenuPrincipalSIGU extends JFrame {
 
+    // --- NUEVO: Variable global para rastrear el módulo activo ("Bienes Muebles" o "Bienes Inmuebles") ---
+    public static String moduloSeleccionado = "Bienes Muebles";
+
     private JPanel centerCardPanel;
     private CardLayout cardLayout;
     private JButton[] sidebarButtons;
@@ -54,6 +57,28 @@ public class MenuPrincipalSIGU extends JFrame {
         JLabel lblLogo = new JLabel("  SIGU");
         lblLogo.setFont(new Font("Arial", Font.BOLD, 22));
         header.add(lblLogo, BorderLayout.WEST);
+
+        // --- NUEVO: Selector de Bienes Muebles / Inmuebles en el centro del Header ---
+        JPanel moduloPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 20));
+        moduloPanel.setBackground(Color.WHITE);
+        
+        JLabel lblModulo = new JLabel("Módulo actual:");
+        lblModulo.setFont(new Font("Arial", Font.BOLD, 14));
+        
+        JComboBox<String> comboModulo = new JComboBox<>(new String[]{"Bienes Muebles", "Bienes Inmuebles"});
+        comboModulo.setFont(new Font("Arial", Font.PLAIN, 14));
+        comboModulo.setPreferredSize(new Dimension(170, 30));
+        
+        // Listener para actualizar la variable global al cambiar la selección
+        comboModulo.addActionListener(e -> {
+            moduloSeleccionado = (String) comboModulo.getSelectedItem();
+            System.out.println("[SIGU] Módulo cambiado a: " + moduloSeleccionado);
+        });
+        
+        moduloPanel.add(lblModulo);
+        moduloPanel.add(comboModulo);
+        header.add(moduloPanel, BorderLayout.CENTER);
+        // -----------------------------------------------------------------------------
 
         JPanel profilePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 15));
         profilePanel.setBackground(Color.WHITE);
