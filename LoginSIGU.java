@@ -141,12 +141,6 @@ public class LoginSIGU extends JFrame {
         loginCard.add(btnLogin, cardGbc);
         cardGbc.insets = new Insets(8, 30, 8, 30); 
 
-        JLabel lblForgot = new JLabel("<html><u>¿Olvidaste tu contraseña? Haz clic aquí</u></html>", SwingConstants.CENTER);
-        lblForgot.setFont(new Font("Arial", Font.PLAIN, 12));
-        lblForgot.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        cardGbc.gridy = 6;
-        cardGbc.insets = new Insets(0, 20, 20, 20);
-        loginCard.add(lblForgot, cardGbc);
 
         gbc.gridy = 1;
         add(loginCard, gbc);
@@ -193,6 +187,8 @@ public class LoginSIGU extends JFrame {
                 }
             }
         });
+
+       getRootPane().setDefaultButton(btnLogin); 
     }
 
     // --- NUEVO MÉTODO DE DIAGNÓSTICO CON SALIDAS A CONSOLA ---

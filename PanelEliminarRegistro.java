@@ -29,11 +29,11 @@ public class PanelEliminarRegistro extends JPanel {
         JPanel bodyPanel = new JPanel(new BorderLayout(0, 15));
         bodyPanel.setBackground(Color.WHITE);
 
-        // Barra de búsqueda y filtrado ajustada a las columnas reales
+        // Barra de búsqueda y filtrado
         JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
         filterPanel.setBackground(Color.WHITE);
 
-        comboFiltro = new JComboBox<>(new String[]{"N° de Serie", "Serie", "Descripción", "Nombre del Trabajador"});
+        comboFiltro = new JComboBox<>(new String[]{"Num Serie", "Serie", "Descripción", "Nombre Trabajador"});
         comboFiltro.setPreferredSize(new Dimension(200, 32));
 
         txtBuscar = new JTextField();
@@ -50,7 +50,7 @@ public class PanelEliminarRegistro extends JPanel {
         filterPanel.add(btnBuscar);
         bodyPanel.add(filterPanel, BorderLayout.NORTH);
 
-        // Tabla con datos
+        // Tabla con las 22 columnas
         table = crearTablaModelo();
         bodyPanel.add(new JScrollPane(table), BorderLayout.CENTER);
 
@@ -60,7 +60,7 @@ public class PanelEliminarRegistro extends JPanel {
 
         JButton btnEliminar = new JButton("Eliminar Bien Seleccionado");
         btnEliminar.setFont(new Font("Arial", Font.BOLD, 13));
-        btnEliminar.setBackground(new Color(180, 40, 40)); // Rojo indicativo de acción destructiva
+        btnEliminar.setBackground(new Color(180, 40, 40));
         btnEliminar.setForeground(Color.WHITE);
         btnEliminar.setPreferredSize(new Dimension(220, 38));
         btnEliminar.setFocusPainted(false);
@@ -85,16 +85,27 @@ public class PanelEliminarRegistro extends JPanel {
     }
 
     private JTable crearTablaModelo() {
-        String[] columnas = {"N° Serie", "Serie", "Descripción", "Trabajador", "Estado Físico"};
+        // Las 22 columnas completas
+        String[] columnas = {
+            "N° Serie", "num_dependencia", "unidad responsable", "num_trabajador", 
+            "Nombre Trabajador", "Descripción del bien", "marca", "color", 
+            "material", "Serie", "Estado", "N° de talón", "N° de cheque", 
+            "folio de operación", "num_factura_titulo", "fecha_factura", "num_proveedor", 
+            "Costo de adquisición", "partida_generica", "partida_especifica", "tipo_recurso", "observaciones"
+        };
+
         model = new DefaultTableModel(columnas, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return false; // Desactiva edición en celdas
+                return false;
             }
         };
+
         JTable tbl = new JTable(model);
-        tbl.setRowHeight(30);
+        tbl.setRowHeight(28);
+        tbl.setAutoResizeMode(JTable.AUTO_RESIZE_OFF); // Permite scroll horizontal
         tbl.getTableHeader().setFont(new Font("Arial", Font.BOLD, 13));
+        tbl.setAutoCreateRowSorter(true);
         return tbl;
     }
 
@@ -105,23 +116,22 @@ public class PanelEliminarRegistro extends JPanel {
     public void cargarTodosLosDatos() {
         model.setRowCount(0);
         String tabla = obtenerTabla();
-        String sql = "SELECT b.num_serie, b.serie, b.descripcion_bien, t.nombre_trabajador, b.estado_fisico " +
-                     "FROM " + tabla + " b " +
-                     "LEFT JOIN trabajadores t ON b.num_trabajador = t.num_trabajador";
+
+        String sql = "SELECT b.num_serie, b.num_dependencia, b.unidad_responsable, b.num_trabajador, "
+                   + "t.nombre_trabajador, b.descripcion_bien, b.marca, b.color, "
+                   + "b.material, b.serie, b.estado_fisico, b.num_talon, b.num_cheque, "
+                   + "b.folio_operacion, b.num_factura_titulo, b.fecha_factura, b.num_proveedor, "
+                   + "b.costo_adquisicion, b.partida_generica, b.partida_especifica, b.tipo_recurso, b.observaciones "
+                   + "FROM " + tabla + " b "
+                   + "LEFT JOIN trabajadores t ON b.num_trabajador = t.num_trabajador "
+                   + "ORDER BY b.num_serie ASC";
 
         try (Connection con = Conectar.getConexion();
              PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
-            while (rs.next()) {
-                model.addRow(new Object[]{
-                        rs.getString("num_serie"),
-                        rs.getString("serie"),
-                        rs.getString("descripcion_bien"),
-                        rs.getString("nombre_trabajador") != null ? rs.getString("nombre_trabajador") : "Sin asignar",
-                        rs.getString("estado_fisico")
-                });
-            }
+            poblarTabla(rs);
+
         } catch (SQLException e) {
             System.err.println("Error al cargar registros: " + e.getMessage());
         }
@@ -142,44 +152,80 @@ public class PanelEliminarRegistro extends JPanel {
 
         model.setRowCount(0);
         String tabla = obtenerTabla();
-        String sql = "SELECT b.num_serie, b.serie, b.descripcion_bien, t.nombre_trabajador, b.estado_fisico " +
-                     "FROM " + tabla + " b " +
-                     "LEFT JOIN trabajadores t ON b.num_trabajador = t.num_trabajador " +
-                     "WHERE " + colBd + " LIKE ?";
+
+        String sql = "SELECT b.num_serie, b.num_dependencia, b.unidad_responsable, b.num_trabajador, "
+                   + "t.nombre_trabajador, b.descripcion_bien, b.marca, b.color, "
+                   + "b.material, b.serie, b.estado_fisico, b.num_talon, b.num_cheque, "
+                   + "b.folio_operacion, b.num_factura_titulo, b.fecha_factura, b.num_proveedor, "
+                   + "b.costo_adquisicion, b.partida_generica, b.partida_especifica, b.tipo_recurso, b.observaciones "
+                   + "FROM " + tabla + " b "
+                   + "LEFT JOIN trabajadores t ON b.num_trabajador = t.num_trabajador "
+                   + "WHERE " + colBd + " LIKE ? "
+                   + "ORDER BY b.num_serie ASC";
 
         try (Connection con = Conectar.getConexion();
              PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setString(1, "%" + texto + "%");
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    model.addRow(new Object[]{
-                            rs.getString("num_serie"),
-                            rs.getString("serie"),
-                            rs.getString("descripcion_bien"),
-                            rs.getString("nombre_trabajador") != null ? rs.getString("nombre_trabajador") : "Sin asignar",
-                            rs.getString("estado_fisico")
-                    });
-                }
+                poblarTabla(rs);
             }
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Error en la búsqueda: " + e.getMessage(), "Error SQL", JOptionPane.ERROR_MESSAGE);
         }
     }
 
+    private void poblarTabla(ResultSet rs) throws SQLException {
+        while (rs.next()) {
+            int numTrabajador = rs.getInt("num_trabajador");
+            String nombreTrabajador = rs.getString("nombre_trabajador");
+
+            model.addRow(new Object[]{
+                rs.getString("num_serie"),
+                rs.getString("num_dependencia"),
+                rs.getString("unidad_responsable"),
+                numTrabajador == 0 ? "Sin asignar" : numTrabajador,
+                nombreTrabajador != null ? nombreTrabajador : "Sin asignar",
+                rs.getString("descripcion_bien"),
+                rs.getString("marca"),
+                rs.getString("color"),
+                rs.getString("material"),
+                rs.getString("serie"),
+                rs.getString("estado_fisico"),
+                rs.getString("num_talon"),
+                rs.getString("num_cheque"),
+                rs.getString("folio_operacion"),
+                rs.getString("num_factura_titulo"),
+                rs.getString("fecha_factura"),
+                rs.getString("num_proveedor"),
+                rs.getString("costo_adquisicion"),
+                rs.getString("partida_generica"),
+                rs.getString("partida_especifica"),
+                rs.getString("tipo_recurso"),
+                rs.getString("observaciones")
+            });
+        }
+    }
+
     private void eliminarRegistroSeleccionado() {
-        int fila = table.getSelectedRow();
-        if (fila == -1) {
+        int viewRow = table.getSelectedRow();
+        if (viewRow == -1) {
             JOptionPane.showMessageDialog(this, "Por favor, seleccione un registro de la tabla para eliminar.", "Aviso", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        String numSerie = model.getValueAt(fila, 0).toString();
-        String descripcion = model.getValueAt(fila, 2) != null ? model.getValueAt(fila, 2).toString() : "";
+        // Conversión del índice visual al índice del modelo en caso de ordenamiento
+        int modelRow = table.convertRowIndexToModel(viewRow);
+
+        // Extracción usando los índices correctos de las 22 columnas:
+        // Columna 0 = N° Serie, Columna 5 = Descripción del bien
+        String numSerie = String.valueOf(model.getValueAt(modelRow, 0));
+        Object descObj = model.getValueAt(modelRow, 5);
+        String descripcion = descObj != null ? descObj.toString() : "";
 
         int confirmacion = JOptionPane.showConfirmDialog(
                 this,
-                "¿Está seguro de que desea eliminar permanentemente el registro?\n" +
+                "¿Está seguro de que desea eliminar permanentemente el registro?\n\n" +
                 "N° Serie: " + numSerie + "\n" +
                 "Descripción: " + descripcion,
                 "Confirmar Eliminación",
@@ -199,7 +245,7 @@ public class PanelEliminarRegistro extends JPanel {
 
                 if (filasAfectadas > 0) {
                     JOptionPane.showMessageDialog(this, "El registro ha sido eliminado exitosamente.");
-                    cargarTodosLosDatos(); // Refresca la tabla tras eliminar
+                    cargarTodosLosDatos(); // Refresca la tabla
                 }
             } catch (SQLException ex) {
                 JOptionPane.showMessageDialog(this, "Error al eliminar en la base de datos: " + ex.getMessage(), "Error SQL", JOptionPane.ERROR_MESSAGE);

@@ -3,9 +3,13 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.sql.*;
+import java.text.MessageFormat;
 
 public class PanelConsultarInventario extends JPanel {
 
@@ -60,16 +64,24 @@ public class PanelConsultarInventario extends JPanel {
         add(topPanel, BorderLayout.NORTH);
 
         // --- TABLA DE DATOS (CENTRO) ---
-        String[] columnas = {"N° Serie", "Serie", "Descripción", "Nombre Trabajador", "Estado"};
+        String[] columnas = {
+            "N° Serie", "num_dependencia", "unidad responsable", "num_trabajador", 
+            "Nombre Trabajador", "Descripción del bien", "marca", "color", 
+            "material", "Serie", "Estado", "N° de talón", "N° de cheque", 
+            "folio de operación", "num_factura_titulo", "fecha_factura", "num_proveedor", 
+            "Costo de adquisición", "partida_generica", "partida_especifica", "tipo_recurso", "observaciones"
+        };
+
         model = new DefaultTableModel(columnas, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return false; // Hace la tabla de solo lectura
+                return false; // Solo lectura
             }
         };
 
         table = new JTable(model);
         table.setRowHeight(28);
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         table.getTableHeader().setFont(new Font("Arial", Font.BOLD, 13));
 
         JScrollPane scrollPane = new JScrollPane(table);
@@ -105,7 +117,6 @@ public class PanelConsultarInventario extends JPanel {
         cargarDatos();
     }
 
-    // Determina la tabla de MySQL según el módulo elegido en el Header
     private String obtenerTablaTarget() {
         if ("Bienes Inmuebles".equals(MenuPrincipalSIGU.moduloSeleccionado)) {
             return "bienes_inmuebles";
@@ -116,27 +127,24 @@ public class PanelConsultarInventario extends JPanel {
     public void cargarDatos() {
         model.setRowCount(0);
         String tabla = obtenerTablaTarget();
-    
-        // Consulta con INNER JOIN para traer el nombre real del trabajador
-        String sql = "SELECT b.num_serie, b.serie, b.descripcion_bien, t.nombre_trabajador, b.estado_fisico " +
-                     "FROM " + tabla + " b " +
-                     "LEFT JOIN trabajadores t ON b.num_trabajador = t.num_trabajador";
+
+        String sql = "SELECT b.num_serie, b.num_dependencia, b.unidad_responsable, b.num_trabajador, "
+                   + "t.nombre_trabajador, b.descripcion_bien, b.marca, b.color, "
+                   + "b.material, b.serie, b.estado_fisico, b.num_talon, b.num_cheque, "
+                   + "b.folio_operacion, b.num_factura_titulo, b.fecha_factura, b.num_proveedor, "
+                   + "b.costo_adquisicion, b.partida_generica, b.partida_especifica, b.tipo_recurso, b.observaciones "
+                   + "FROM " + tabla + " b "
+                   + "LEFT JOIN trabajadores t ON b.num_trabajador = t.num_trabajador "
+                   + "ORDER BY b.num_serie ASC";
 
         try (Connection con = Conectar.getConexion();
-         PreparedStatement ps = con.prepareStatement(sql);
-         ResultSet rs = ps.executeQuery()) {
+             PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
 
-        while (rs.next()) {
-            model.addRow(new Object[]{
-                    rs.getString("num_serie"),
-                    rs.getString("serie"),
-                    rs.getString("descripcion_bien"),
-                    rs.getString("nombre_trabajador") != null ? rs.getString("nombre_trabajador") : "Sin asignar",
-                    rs.getString("estado_fisico")
-            });
-        }
+            poblarTabla(rs);
+
         } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Error al cargar datos desde " + tabla + ": " + e.getMessage(), "Error SQL", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error al cargar datos desde " + tabla + ": " + e.getMessage(), "Error SQL", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -155,61 +163,155 @@ public class PanelConsultarInventario extends JPanel {
 
         model.setRowCount(0);
         String tabla = obtenerTablaTarget();
-        String sql = "SELECT b.num_serie, b.serie, b.descripcion_bien, t.nombre_trabajador, b.estado_fisico " +
-                    "FROM " + tabla + " b " +
-                    "LEFT JOIN trabajadores t ON b.num_trabajador = t.num_trabajador " +
-                    "WHERE " + columnaBd + " LIKE ?";
+
+        String sql = "SELECT b.num_serie, b.num_dependencia, b.unidad_responsable, b.num_trabajador, "
+                   + "t.nombre_trabajador, b.descripcion_bien, b.marca, b.color, "
+                   + "b.material, b.serie, b.estado_fisico, b.num_talon, b.num_cheque, "
+                   + "b.folio_operacion, b.num_factura_titulo, b.fecha_factura, b.num_proveedor, "
+                   + "b.costo_adquisicion, b.partida_generica, b.partida_especifica, b.tipo_recurso, b.observaciones "
+                   + "FROM " + tabla + " b "
+                   + "LEFT JOIN trabajadores t ON b.num_trabajador = t.num_trabajador "
+                   + "WHERE " + columnaBd + " LIKE ? "
+                   + "ORDER BY b.num_serie ASC";
 
         try (Connection con = Conectar.getConexion();
-            PreparedStatement ps = con.prepareStatement(sql)) {
+             PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setString(1, "%" + texto + "%");
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    model.addRow(new Object[]{
-                            rs.getString("num_serie"),
-                            rs.getString("serie"),
-                            rs.getString("descripcion_bien"),
-                            rs.getString("nombre_trabajador") != null ? rs.getString("nombre_trabajador") : "Sin asignar",
-                            rs.getString("estado_fisico")
-                    });
-                }
+                poblarTabla(rs);
             }
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Error en la búsqueda: " + e.getMessage(), "Error SQL", JOptionPane.ERROR_MESSAGE);
         }
     }
 
+    private void poblarTabla(ResultSet rs) throws SQLException {
+        while (rs.next()) {
+            int numTrabajador = rs.getInt("num_trabajador");
+            String nombreTrabajador = rs.getString("nombre_trabajador");
+
+            model.addRow(new Object[]{
+                rs.getString("num_serie"),
+                rs.getString("num_dependencia"),
+                rs.getString("unidad_responsable"),
+                numTrabajador == 0 ? "Sin asignar" : numTrabajador,
+                nombreTrabajador != null ? nombreTrabajador : "Sin asignar",
+                rs.getString("descripcion_bien"),
+                rs.getString("marca"),
+                rs.getString("color"),
+                rs.getString("material"),
+                rs.getString("serie"),
+                rs.getString("estado_fisico"),
+                rs.getString("num_talon"),
+                rs.getString("num_cheque"),
+                rs.getString("folio_operacion"),
+                rs.getString("num_factura_titulo"),
+                rs.getString("fecha_factura"),
+                rs.getString("num_proveedor"),
+                rs.getString("costo_adquisicion"),
+                rs.getString("partida_generica"),
+                rs.getString("partida_especifica"),
+                rs.getString("tipo_recurso"),
+                rs.getString("observaciones")
+            });
+        }
+    }
+
+    /**
+     * Exportación a Excel (.xls) usando formato HTML.
+     * Funciona 100% nativo con Java sin librerías ni dependencias externas.
+     */
     private void exportarExcel() {
+        if (model.getRowCount() == 0) {
+            JOptionPane.showMessageDialog(this, "No hay datos en la tabla para exportar.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("Guardar como reporte CSV / Excel");
+        fileChooser.setDialogTitle("Guardar como Excel (.xls)");
+        fileChooser.setSelectedFile(new File("Inventario.xls"));
+
         int userSelection = fileChooser.showSaveDialog(this);
 
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToSave = fileChooser.getSelectedFile();
             String path = fileToSave.getAbsolutePath();
-            if (!path.endsWith(".csv")) path += ".csv";
+            if (!path.toLowerCase().endsWith(".xls")) {
+                path += ".xls";
+            }
 
-            try (FileWriter fw = new FileWriter(path)) {
-                for (int i = 0; i < model.getColumnCount(); i++) {
-                    fw.write(model.getColumnName(i) + (i == model.getColumnCount() - 1 ? "" : ","));
+            try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(
+                    new FileOutputStream(path), StandardCharsets.UTF_8))) {
+
+                pw.println("<!DOCTYPE html>");
+                pw.println("<html><head><meta charset='UTF-8'>");
+                pw.println("<style>");
+                pw.println("table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 11pt; }");
+                pw.println("th { background-color: #295CB4; color: #FFFFFF; font-weight: bold; border: 1px solid #000000; padding: 6px 10px; text-align: center; }");
+                pw.println("td { border: 1px solid #CCCCCC; padding: 5px 8px; text-align: left; mso-number-format:'\\@'; }");
+                pw.println("tr:nth-child(even) { background-color: #F8F9FA; }");
+                pw.println("</style></head><body>");
+
+                pw.println("<table><thead><tr>");
+                for (int col = 0; col < model.getColumnCount(); col++) {
+                    pw.println("<th>" + model.getColumnName(col) + "</th>");
                 }
-                fw.write("\n");
+                pw.println("</tr></thead><tbody>");
 
-                for (int i = 0; i < model.getRowCount(); i++) {
-                    for (int j = 0; j < model.getColumnCount(); j++) {
-                        fw.write(model.getValueAt(i, j).toString() + (j == model.getColumnCount() - 1 ? "" : ","));
+                for (int row = 0; row < model.getRowCount(); row++) {
+                    pw.println("<tr>");
+                    for (int col = 0; col < model.getColumnCount(); col++) {
+                        Object val = model.getValueAt(row, col);
+                        String celda = (val != null) ? val.toString().replace("<", "&lt;").replace(">", "&gt;") : "";
+                        pw.println("<td>" + celda + "</td>");
                     }
-                    fw.write("\n");
+                    pw.println("</tr>");
                 }
-                JOptionPane.showMessageDialog(this, "Reporte exportado exitosamente a:\n" + path);
+
+                pw.println("</tbody></table></body></html>");
+
+                JOptionPane.showMessageDialog(this, "¡Reporte exportado exitosamente a Excel!\nUbicación: " + path, "Éxito", JOptionPane.INFORMATION_MESSAGE);
+
             } catch (IOException ex) {
-                JOptionPane.showMessageDialog(this, "Error al exportar archivo: " + ex.getMessage(), "Error File", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Error al guardar el archivo: " + ex.getMessage(), "Error File", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
 
+    /**
+     * Exportación a PDF utilizando el motor de impresión nativo de Java.
+     * Abre el diálogo de impresión donde el usuario selecciona "Guardar como PDF" / "Microsoft Print to PDF".
+     */
     private void exportarPDF() {
-        JOptionPane.showMessageDialog(this, "Iniciando generación de documento PDF del inventario...");
+        if (model.getRowCount() == 0) {
+            JOptionPane.showMessageDialog(this, "No hay datos en la tabla para exportar a PDF.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            // Encabezado y Pie de página del documento PDF
+            MessageFormat header = new MessageFormat("Consulta General de Inventario - SIGU");
+            MessageFormat footer = new MessageFormat("Página {0,number,integer}");
+
+            // FIT_WIDTH ajusta automáticamente las 22 columnas para que quepan en la hoja
+            boolean finalizado = table.print(
+                JTable.PrintMode.FIT_WIDTH, 
+                header, 
+                footer, 
+                true,   // Muestra el diálogo para seleccionar la impresora / Guardar como PDF
+                null, 
+                true    // Habilita la impresión interactiva
+            );
+
+            if (finalizado) {
+                JOptionPane.showMessageDialog(this, "¡Proceso de generación de PDF completado con éxito!", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, "Se canceló el proceso de exportación a PDF.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            }
+
+        } catch (java.awt.print.PrinterException e) {
+            JOptionPane.showMessageDialog(this, "Error al generar la impresión en PDF: " + e.getMessage(), "Error de Impresión", JOptionPane.ERROR_MESSAGE);
+        }
     }
 }

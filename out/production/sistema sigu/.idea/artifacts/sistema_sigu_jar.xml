@@ -1,0 +1,12 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="sistema sigu:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/sistema_sigu_jar</output-path>
+    <root id="archive" name="sistema sigu.jar">
+      <element id="directory" name="META-INF">
+        <element id="file-copy" path="$PROJECT_DIR$/src/META-INF/MANIFEST.MF" />
+      </element>
+      <element id="module-output" name="sistema sigu" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/mysql-connector-j-9.7.0.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>

@@ -68,11 +68,24 @@ public class MenuPrincipalSIGU extends JFrame {
         JComboBox<String> comboModulo = new JComboBox<>(new String[]{"Bienes Muebles", "Bienes Inmuebles"});
         comboModulo.setFont(new Font("Arial", Font.PLAIN, 14));
         comboModulo.setPreferredSize(new Dimension(170, 30));
-        
-        // Listener para actualizar la variable global al cambiar la selección
+
         comboModulo.addActionListener(e -> {
             moduloSeleccionado = (String) comboModulo.getSelectedItem();
             System.out.println("[SIGU] Módulo cambiado a: " + moduloSeleccionado);
+
+            // Re-validar o limpiar la vista activa actual
+            Component activeCard = null;
+            for (Component comp : centerCardPanel.getComponents()) {
+                if (comp.isVisible()) {
+                    activeCard = comp;
+                    break;
+                }
+            }
+
+            // Si la vista activa es de consulta, recargamos la tabla según el nuevo módulo
+            if (activeCard instanceof PanelConsultarInventario) {
+                ((PanelConsultarInventario) activeCard).cargarDatos();
+            }
         });
         
         moduloPanel.add(lblModulo);
